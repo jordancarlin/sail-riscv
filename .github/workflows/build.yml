@@ -21,14 +21,23 @@ jobs:
       run: opam init --disable-sandboxing -y
     - name: Install sail
       run: opam install -y sail
-    - name: Build and test simulators
-      run: eval $(opam env) && make c_emulator/riscv_sim_RV64 && ARCH=32 c_emulator/riscv_sim_RV32
+    - name: Build RV64 C Simulator
+      run: eval $(opam env) && ARCH=64 c_emulator/riscv_sim_RV32
     - name: Upload ARCH=64 model
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: riscv_sim_RV64
         path: c_emulator/riscv_sim_RV64
+    - name: Release ARCH=64 model
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: c_emulator/riscv_sim_RV64
+        asset_name: riscv_sim_RV64
+
+    - name: Build RV32 C Simulator
+      run: eval $(opam env) && ARCH=32 c_emulator/riscv_sim_RV32
     - name: Upload ARCH=32 model
       if: always()
       uses: actions/upload-artifact@v4
