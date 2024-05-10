@@ -22,7 +22,7 @@ jobs:
     - name: Install sail
       run: opam install -y sail
     - name: Build C Simulators
-      run: eval $(opam env) && ARCH=64 make c_emulator/riscv_sim_RV32 && ARCH=32 make c_emulator/riscv_sim_RV32
+      run: eval $(opam env) && ARCH=64 make c_emulator/riscv_sim_RV64 && ARCH=32 make c_emulator/riscv_sim_RV32
     - name: Upload ARCH=64 model
       if: always()
       uses: actions/upload-artifact@v4
