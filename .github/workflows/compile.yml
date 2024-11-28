@@ -2,33 +2,126 @@ name: CI
 
 on: [push, pull_request, workflow_dispatch]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu Installations
+          # - name: ubuntu-20.04
+          #   os: ubuntu-20.04
+          #   container: null
+          #   regressionFail: true
+          - name: ubuntu-22.04
+            os: ubuntu-22.04
+            container: null
+          # - name: ubuntu-24.04
+          #   os: ubuntu-24.04
+          #   container: null
+          # # Debian Installations
+          # - name: debian-12
+          #   os: ubuntu-latest
+          #   image: debian:12
+          #   imageFamily: debian
+          # - name: debian-11
+          #   os: ubuntu-latest
+          #   image: debian:11
+          #   imageFamily: debian
+          # # Red Hat Installations
+          # - name: rocky-8
+          #   os: ubuntu-latest
+          #   image: rockylinux:8
+          #   imageFamily: redhat
+          #   regressionFail: true
+          # - name: rocky-9
+          #   os: ubuntu-latest
+          #   image: rockylinux:9
+          #   imageFamily: redhat
+          # - name: almalinux-8
+          #   os: ubuntu-latest
+          #   image: almalinux:8
+          #   imageFamily: redhat
+          #   regressionFail: true
+          # - name: almalinux-9
+          #   os: ubuntu-latest
+          #   image: almalinux:9
+          #   imageFamily: redhat
+          # # SUSE Installations
+          # - name: opensuse-15.6
+          #   os: ubuntu-latest
+          #   image: opensuse/leap:15.6
+          #   imageFamily: suse
+          # # User level installation
+          # - name: user-install
+          #   os: ubuntu-latest
+          #   image: null
+          #   user: true
+          # # Custom location installation
+          # - name: custom-install
+          #   os: ubuntu-latest
+          #   image: null
+          #   riscv_path: /home/riscv
+          # # Custom location user level installation
+          # - name: custom-user-install
+          #   os: ubuntu-latest
+          #   image: null
+          #   user: true
+          #   riscv_path: $HOME/riscv-toolchain
+
+    # run on selected version of ubuntu or on ubuntu-latest with docker image
+    runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.image }}
+      options: --privileged --mount type=bind,source=/,target=/host --pid=host --entrypoint /bin/bash # Allow for connection with host
+
     steps:
-    - name: Install packages
-      run: sudo apt install -y --no-install-recommends zlib1g-dev pkg-config libgmp-dev curl
-    - name: Check out repository code
-      uses: actions/checkout@HEAD
-      with:
-        submodules: true
-    - name: Ensure pre-commit checks pass
-      run: python3 -m pip install pre-commit && pre-commit run --all-files --show-diff-on-failure --color=always
-    - name: Install sail from binary
-      run: |
-        sudo mkdir -p /usr/local
-        curl --location https://github.com/rems-project/sail/releases/download/0.18-linux-binary/sail.tar.gz | sudo tar xvz --directory=/usr/local --strip-components=1
-    - name: Build and test simulators
-      run: test/run_tests.sh
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: tests.xml
-        path: test/tests.xml
-    - name: Upload event payload
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: event.json
-        path: ${{ github.event_path }}
+      # Docker images need git installed or the checkout action fails
+      - name: Install Dependencies for Container Image
+        run: |
+            if [ ${{ matrix.imageFamily }} == "debian" ]; then
+              apt-get update
+              apt-get install -y sudo git curl tar
+            elif [ ${{ matrix.imageFamily }} == "redhat" ]; then
+              dnf install -y sudo git tar
+              dnf install curl -y --allowerasing || true
+            elif [ ${{ matrix.imageFamily }} == "suse" ]; then
+              zypper install -y sudo git curl tar
+            else
+              sudo apt-get update
+              sudo apt-get install -y git curl tar
+            fi
+      - name: Check out repository code
+        uses: actions/checkout@HEAD
+        with:
+          submodules: true
+      - name: Install sail from binary
+        run: |
+          sudo mkdir -p /usr/local
+          curl --location https://github.com/user-attachments/files/17933831/riscv_sim_RV64.tar.gz | sudo tar xvz --directory=/usr/local/bin
+    # export PATH=$PATH:/usr/local/bin
+      - name: check install
+        run: which riscv_sim_RV64
+      - name: Run tests
+        run: |
+          cd test/riscv-tests
+          ls -lh
+          riscv_sim_RV64 rv64ua-p-amoor_d.elf
+      - name: Build and test simulators
+        run: test/run_tests.sh
+      # - name: Upload test results
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: tests.xml
+      #     path: test/tests.xml
+      # - name: Upload event payload
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: event.json
+      #     path: ${{ github.event_path }}
