@@ -57,10 +57,10 @@ jobs:
             image: opensuse/leap:15.6
             imageFamily: suse
           # User level installation
-          - name: user-install
-            os: ubuntu-latest
-            image: null
-            user: true
+          # - name: user-install
+          #   os: ubuntu-latest
+          #   image: null
+          #   user: true
           # # Custom location installation
           # - name: custom-install
           #   os: ubuntu-latest
@@ -90,7 +90,7 @@ jobs:
               dnf install -y sudo git tar
               dnf install curl -y --allowerasing || true
             elif [ ${{ matrix.imageFamily }} == "suse" ]; then
-              zypper install -y sudo git curl tar
+              zypper install -y sudo git curl tar gzip
             else
               sudo apt-get update
               sudo apt-get install -y git curl tar
@@ -103,25 +103,17 @@ jobs:
         run: |
           sudo mkdir -p /usr/local
           curl --location https://github.com/user-attachments/files/17976143/riscv_sim_RV64.tar.gz | sudo tar xvz --directory=/usr/local/bin
-    # export PATH=$PATH:/usr/local/bin
-      - name: check install
-        run: which riscv_sim_RV64
-      - name: Run tests
-        run: |
-          cd test/riscv-tests
-          ls -lh
-          riscv_sim_RV64 rv64ua-p-amoor_d.elf
       - name: Build and test simulators
         run: test/run_tests.sh
-      # - name: Upload test results
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: tests.xml
-      #     path: test/tests.xml
-      # - name: Upload event payload
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: event.json
-      #     path: ${{ github.event_path }}
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests.xml
+          path: test/tests.xml
+      - name: Upload event payload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: event.json
+          path: ${{ github.event_path }}

@@ -52,13 +52,14 @@ cd $RISCVDIR
 
 printf "Running 64-bit RISCV tests...\n"
 
+
 for test in $DIR/riscv-tests/rv64*.elf; do
-    riscv_sim_RV64 -p $test #> ${test%.elf}.cout 2>&1 && grep -q SUCCESS ${test%.elf}.cout
-    # then
-	# green "C-64 $(basename $test)" "ok"
-    # else
-	# red "C-64 $(basename $test)" "fail"
-    # fi
+    if timeout 5 riscv_sim_RV64 -p $test > ${test%.elf}.cout 2>&1 && grep -q SUCCESS ${test%.elf}.cout
+    then
+	green "C-64 $(basename $test)" "ok"
+    else
+	red "C-64 $(basename $test)" "fail"
+    fi
 done
 finish_suite "64-bit RISCV C tests"
 
