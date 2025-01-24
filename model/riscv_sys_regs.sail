@@ -384,8 +384,10 @@ function clause read_CSR(0x30A) = menvcfg.bits[xlen - 1 .. 0]
 function clause read_CSR(0x31A if xlen == 32) = menvcfg.bits[63 .. 32]
 function clause read_CSR(0x10A) = senvcfg.bits[xlen - 1 .. 0]
 
-function clause write_CSR((0x30A, value) if xlen == 32) = { menvcfg = legalize_menvcfg(menvcfg, menvcfg.bits[63 .. 32] @ value); menvcfg.bits[31 .. 0] }
-function clause write_CSR((0x30A, value) if xlen == 64) = { menvcfg = legalize_menvcfg(menvcfg, value); menvcfg.bits }
+function clause write_CSR(0x30A, value) = {
+  if xlen == 32 then {menvcfg = legalize_menvcfg(menvcfg, menvcfg.bits[63 .. 32] @ value); menvcfg.bits[31 .. 0]}
+  else {menvcfg = legalize_menvcfg(menvcfg, value); menvcfg.bits}
+}
 function clause write_CSR((0x31A, value) if xlen == 32) = { menvcfg = legalize_menvcfg(menvcfg, value @ menvcfg.bits[31 .. 0]); menvcfg.bits[63 .. 32] }
 function clause write_CSR(0x10A, value) = { senvcfg = legalize_senvcfg(senvcfg, zero_extend(value)); senvcfg.bits[xlen - 1 .. 0] }
 
