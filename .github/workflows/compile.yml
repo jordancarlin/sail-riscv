@@ -20,17 +20,15 @@ jobs:
         curl --location https://github.com/rems-project/sail/releases/download/0.18-linux-binary/sail.tar.gz | sudo tar xvz --directory=/usr/local --strip-components=1
     - name: Build and test simulators
       run: |
-        mkdir build
-        cd build
         # Ninja is used because the CMake Makefile generator doesn't
         # build top-level targets in parallel unfortunately.
-        cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+        cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -S . -B build
         # By default only the rv32d and rv64d emulators are build,
         # but we want to build more targets here to ensure they
         # can at least build without errors.
-        ninja all riscv_sim_rv32d_rvfi generated_smt_rv64f generated_docs_rv64d
+        cmake --build build --target all riscv_sim_rv32d_rvfi generated_smt_rv64f generated_docs_rv64d
         # These targets do not work with Sail 0.18: generated_rmem_rv32d_rmem generated_coq_rv64f_coq
-        ctest --output-junit text.xml
+        ctest --output-junit tests.xml --test-dir build
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
