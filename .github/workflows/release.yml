@@ -1,6 +1,15 @@
 name: Release
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+      notes:
+        description: 'Release notes'
+        required: false
+
 
 jobs:
   build:
@@ -58,3 +67,23 @@ jobs:
           build/c_emulator/riscv_sim_rv*
           build/model/riscv_model_rv64d.json
         if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/c_emulator/riscv_sim_rv*
+          build/model/riscv_model_rv64d.json
+        fail_on_unmatched_files: true
+        tag_name: ${{ github.event.inputs.version }}
+        body: ${{ github.event.inputs.notes }}
+        draft: false
+        prerelease: false
