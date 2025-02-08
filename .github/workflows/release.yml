@@ -9,6 +9,10 @@ on:
       notes:
         description: 'Release notes'
         required: false
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        type: boolean
 
 
 jobs:
@@ -77,13 +81,13 @@ jobs:
       with:
         merge-multiple: true
     - name: Create release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
-          build/c_emulator/riscv_sim_rv*
-          build/model/riscv_model_rv64d.json
+          c_emulator/riscv_sim_rv*
+          model/riscv_model_rv64d.json
         fail_on_unmatched_files: true
-        tag_name: ${{ github.event.inputs.version }}
-        body: ${{ github.event.inputs.notes }}
+        tag_name: ${{ inputs.version }}
+        body: ${{ inputs.notes }}
+        prerelease: ${{ inputs.prerelease }}
         draft: false
-        prerelease: false
