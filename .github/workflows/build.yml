@@ -1,0 +1,25 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 0' # Run every Sunday at midnight PST
+
+jobs:
+  build_simulators_sh:
+    name: Run build_simulators.sh script
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Install packages
+      run: sudo apt install -y --no-install-recommends zlib1g-dev pkg-config curl
+
+    - name: Install sail from binary
+      run: |
+        sudo mkdir -p /usr/local
+        curl --location https://github.com/rems-project/sail/releases/download/0.18-linux-binary/sail.tar.gz | sudo tar xvz --directory=/usr/local --strip-components=1
+
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Build using build_simulators.sh script
+      run: ./build_simulators.sh
