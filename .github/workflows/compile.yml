@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Install packages
-      run: sudo apt install -y --no-install-recommends pkg-config libgmp-dev curl ninja-build
+      run: sudo apt install -y --no-install-recommends pkg-config libgmp-dev curl ninja-build cmake
 
     - name: Install sail from binary
       run: |
@@ -46,3 +46,23 @@ jobs:
       with:
         name: event.json
         path: ${{ github.event_path }}
+
+  # This tests the build_simulators.sh script with the DOWNLOAD_GMP option enabled
+  build-emulators:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Install packages
+      run: sudo apt install -y --no-install-recommends curl cmake
+
+    - name: Install sail from binary
+      run: |
+        sudo mkdir -p /usr/local
+        curl --location https://github.com/rems-project/sail/releases/download/0.19-linux-binary/sail.tar.gz | sudo tar xvz --directory=/usr/local --strip-components=1
+
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Build and test simulators
+      run: |
+        ./build_simulators.sh
+        ctest --test-dir build
