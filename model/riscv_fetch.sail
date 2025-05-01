@@ -16,36 +16,40 @@ function fetch() -> FetchResult =
   /* fetch PC check for extensions: extensions return a transformed PC to fetch,
    * but any exceptions use the untransformed PC.
    */
-  match ext_fetch_check_pc(PC, PC) {
-    Ext_FetchAddr_Error(e)   => F_Ext_Error(e),
-    Ext_FetchAddr_OK(use_pc) => {
-      let use_pc_bits = bits_of(use_pc);
-      if   (use_pc_bits[0] != bitzero | (use_pc_bits[1] != bitzero & not(currentlyEnabled(Ext_Zca))))
-      then F_Error(E_Fetch_Addr_Align(), PC)
-      else match translateAddr(use_pc, InstructionFetch()) {
-        TR_Failure(e, _)     => F_Error(e, PC),
-        TR_Address(ppclo, _) => {
-          /* split instruction fetch into 16-bit granules to handle RVC, as
-           * well as to generate precise fault addresses in any fetch
-           * exceptions.
-           */
-          match mem_read(InstructionFetch(), ppclo, 2, false, false, false) {
-            Err(e)  => F_Error(e, PC),
-            Ok(ilo) => {
-              if   isRVC(ilo)
-              then F_RVC(ilo)
-              else {
-                /* fetch PC check for the next instruction granule */
-                let PC_hi = PC + 2;
-                match ext_fetch_check_pc(PC, PC_hi) {
-                  Ext_FetchAddr_Error(e)      => F_Ext_Error(e),
-                  Ext_FetchAddr_OK(use_pc_hi) => {
-                    match translateAddr(use_pc_hi, InstructionFetch()) {
-                      TR_Failure(e, _)     => F_Error(e, PC_hi),
-                      TR_Address(ppchi, _) => {
-                        match mem_read(InstructionFetch(), ppchi, 2, false, false, false) {
-                          Err(e)  => F_Error(e, PC_hi),
-                          Ok(ihi) => F_Base(append(ihi, ilo))
+  if (get_config_rvfi())
+  then rvfi_fetch()
+  else {
+    match ext_fetch_check_pc(PC, PC) {
+      Ext_FetchAddr_Error(e)   => F_Ext_Error(e),
+      Ext_FetchAddr_OK(use_pc) => {
+        let use_pc_bits = bits_of(use_pc);
+        if   (use_pc_bits[0] != bitzero | (use_pc_bits[1] != bitzero & not(currentlyEnabled(Ext_Zca))))
+        then F_Error(E_Fetch_Addr_Align(), PC)
+        else match translateAddr(use_pc, InstructionFetch()) {
+          TR_Failure(e, _)     => F_Error(e, PC),
+          TR_Address(ppclo, _) => {
+            /* split instruction fetch into 16-bit granules to handle RVC, as
+            * well as to generate precise fault addresses in any fetch
+            * exceptions.
+            */
+            match mem_read(InstructionFetch(), ppclo, 2, false, false, false) {
+              Err(e)  => F_Error(e, PC),
+              Ok(ilo) => {
+                if   isRVC(ilo)
+                then F_RVC(ilo)
+                else {
+                  /* fetch PC check for the next instruction granule */
+                  let PC_hi = PC + 2;
+                  match ext_fetch_check_pc(PC, PC_hi) {
+                    Ext_FetchAddr_Error(e)      => F_Ext_Error(e),
+                    Ext_FetchAddr_OK(use_pc_hi) => {
+                      match translateAddr(use_pc_hi, InstructionFetch()) {
+                        TR_Failure(e, _)     => F_Error(e, PC_hi),
+                        TR_Address(ppchi, _) => {
+                          match mem_read(InstructionFetch(), ppchi, 2, false, false, false) {
+                            Err(e)  => F_Error(e, PC_hi),
+                            Ok(ihi) => F_Base(append(ihi, ilo))
+                          }
                         }
                       }
                     }
