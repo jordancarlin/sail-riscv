@@ -1,0 +1,42 @@
+name: RVFI
+
+on: [push, pull_request, workflow_dispatch, merge_group]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install packages
+        run: sudo apt install -y --no-install-recommends pkg-config libgmp-dev curl ninja-build jq device-tree-compiler build-essential
+
+      - name: Install sail from binary
+        run: |
+          sudo mkdir -p /usr/local
+          curl --location https://github.com/rems-project/sail/releases/download/0.19-linux-binary/sail.tar.gz | sudo tar xvz --directory=/usr/local --strip-components=1
+
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Build simulator
+        run: |
+          # Ninja is used because the CMake Makefile generator doesn't
+          # build top-level targets in parallel unfortunately.
+          cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          ninja -C build riscv_sim_rv32d
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.8"
+          cabal-version: "3.8"
+      - name: Download and build TestRIG
+        run: |
+          git clone https://github.com/CTSRD-CHERI/TestRIG.git
+          cd TestRIG
+          git submodule update --init --recursive vengines/QuickCheckVEngine riscv-implementations/qemu
+          make vengines qemu -j 4
+
+      - name: Run TestRIG tests
+        run: |
+          ./build/c_emulator/riscv_sim_rv32d -r 8080 &
+          cd TestRIG
+          ./utils/scripts/runTestRIG.py -a manual -b qemu --implementation-A-port 8080 --implementation-B-port 8081
