@@ -1,12 +1,12 @@
 name: Rocq
 
-on: [workflow_dispatch]
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      SAIL_VERSION: "0.19"
+      SAIL_VERSION: "latest"
       OPAMROOT: /home/rocq/.opam
     container:
       image: rocq/rocq-prover:9.0.0
