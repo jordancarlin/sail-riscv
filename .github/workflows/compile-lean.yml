@@ -20,36 +20,12 @@ jobs:
       - name: System dependencies (ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt install build-essential libgmp-dev z3 cvc4 opam
-
-      - name: Restore cached opam
-        id: cache-opam-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.opam
-          key: ${{ matrix.os }}-${{ matrix.version }}
-
-      - name: Setup opam
-        if: steps.cache-opam-restore.outputs.cache-hit != 'true'
-        run: |
-          opam init --yes --no-setup --shell=sh --compiler=${{ matrix.version }}
-          opam install dune
+          sudo apt install build-essential libgmp-dev z3 cvc4
 
       - name: Install Sail
-        if: steps.cache-opam-restore.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/rems-project/sail.git
-          eval $(opam env)
-          (cd sail; opam install sail --deps-only --yes)
-          (cd sail; make install)
-
-      - name: Save cached opam
-        if: steps.cache-opam-restore.outputs.cache-hit != 'true'
-        id: cache-opam-save
-        uses: actions/cache/save@v4
+        uses: ./.github/actions/install-sail
         with:
-          path: ~/.opam
-          key: ${{ steps.cache-opam-restore.outputs.cache-primary-key }}
+          sail_version: latest
 
       - name: Install Lean
         run: |

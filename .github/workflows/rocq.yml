@@ -6,6 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      SAIL_VERSION: "0.19"
       OPAMROOT: /home/rocq/.opam
     container:
       image: rocq/rocq-prover:9.0.0
@@ -21,12 +22,13 @@ jobs:
           # We're still using Rocq's old name for compatibility with versions < 9
           opam install -y coq=9.0.0 coq-sail-stdpp=0.19
 
-      - name: Install sail from binary
-        run: |
-          curl --location https://github.com/rems-project/sail/releases/download/0.19-linux-binary/sail.tar.gz | tar xvz --directory=/usr/local --strip-components=1
-
       - name: Check out repository code
         uses: actions/checkout@v4
+
+      - name: Install Sail
+        uses: ./.github/actions/install-sail
+        with:
+          sail_version: ${{ env.SAIL_VERSION }}
 
       - name: Generate Rocq model
         run: |
