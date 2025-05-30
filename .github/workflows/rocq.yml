@@ -12,7 +12,7 @@ jobs:
       image: rocq/rocq-prover:9.0.0
       # github requires root to access some resources from outside the container
       # (e.g. https://github.com/actions/checkout/issues/47)
-      options: --user root
+      # options: --user root
     steps:
       - name: Install packages
         run: |
