@@ -2,6 +2,12 @@ name: CI
 
 on: [push, pull_request, workflow_dispatch, merge_group]
 
+# Ensure that if a new commit is pushed to the same PR or branch, any
+# previously running workflow for that PR/branch is cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: "Build and test model (OS: ${{ matrix.os }}, CMake Version: ${{ matrix.cmake_version }})"
