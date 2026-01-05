@@ -138,7 +138,7 @@ jobs:
         id: params
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            SHORT_SHA=${$GITHUB_SHA:0:7}
+            SHORT_SHA=${GITHUB_SHA:0:7}
             TAG="$(date -u +%F)-${SHORT_SHA}"
             NAME="Weekly Release ${TAG}"
             PRERELEASE=true
