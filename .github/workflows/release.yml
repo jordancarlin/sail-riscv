@@ -20,7 +20,7 @@ on:
         type: boolean
   schedule:
     # Weekly on Mondays at 00:00 UTC
-    - cron: "43 16 * * *"
+    - cron: "30 20 * * *"
 
 permissions:
   id-token: write
@@ -134,43 +134,38 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v7
 
-      - name: Set short SHA
-        if: github.event_name == 'schedule'
-        run: echo "SHORT_SHA=$(echo ${GITHUB_SHA::7})" >> $GITHUB_ENV
-
-      - name: Get current date
-        if: github.event_name == 'schedule'
-        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
       - name: Prepare release inputs
         id: params
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            SHORT_SHA=${${{ github.sha }}:0:7}
+            SHORT_SHA=${$GITHUB_SHA:0:7}
             TAG="$(date -u +%F)-${SHORT_SHA}"
             NAME="Weekly Release ${TAG}"
             PRERELEASE=true
             DRAFT=false
             GEN_NOTES=true
+            BODY="Weekly scheduled pre-release for commit ${GITHUB_SHA}."
           else
             TAG=${{ inputs.version }}
             NAME="${TAG}"
             PRERELEASE=${{ inputs.prerelease }}
             DRAFT=${{ inputs.draft }}
             GEN_NOTES=false
+            BODY="${{ inputs.notes }}"
           fi
           echo "tag_name=$TAG" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
           echo "draft=$DRAFT" >> "$GITHUB_OUTPUT"
           echo "generate_release_notes=$GEN_NOTES" >> "$GITHUB_OUTPUT"
+          echo "body=$BODY" >> "$GITHUB_OUTPUT"
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.params.outputs.name }}
           tag_name: ${{ steps.params.outputs.tag_name }}
-          body: ${{ inputs.notes }}
+          body: ${{ steps.params.outputs.body }}
           generate_release_notes: ${{ steps.params.outputs.generate_release_notes }}
           prerelease: ${{ steps.params.outputs.prerelease }}
           draft: ${{ steps.params.outputs.draft }}
