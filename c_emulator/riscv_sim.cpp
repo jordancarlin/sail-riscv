@@ -33,6 +33,7 @@
 #include "file_utils.h"
 #include "riscv_callbacks_log.h"
 #include "riscv_callbacks_rvfi.h"
+#include "riscv_callbacks_rvvi_text.h"
 #include "riscv_model_impl.h"
 #include "rvfi_dii.h"
 #include "sail_riscv_version.h"
@@ -155,6 +156,7 @@ struct CLIOptions {
   bool config_print_htif = false;
   bool config_print_pma = false;
   bool config_print_rvfi = false;
+  bool config_print_rvvi_text = false;
   bool config_print_step = false;
   bool config_print_ptw = false;
 
@@ -252,6 +254,7 @@ static CLIOptions parse_cli(int argc, char **argv) {
   );
   app.add_flag("--trace-mem", opts.config_print_mem_access, "Enable trace output for memory accesses");
   app.add_flag("--trace-rvfi", opts.config_print_rvfi, "Enable trace output for RVFI");
+  app.add_flag("--trace-rvvi-text", opts.config_print_rvvi_text, "Enable RVVI-Text machine-readable trace output");
   app.add_flag("--trace-clint", opts.config_print_clint, "Enable trace output for CLINT memory accesses and status");
   app.add_flag("--trace-exception", opts.config_print_exception, "Enable trace output for exceptions");
   app.add_flag("--trace-interrupt", opts.config_print_interrupt, "Enable trace output for interrupts");
@@ -797,6 +800,15 @@ int inner_main(int argc, char **argv) {
   }
 
   init_sail(model, entry, opts.config_file.c_str());
+
+  // Register RVVI-Text callback after model is fully initialized so that
+  // emit_header() can read zxlen/zflen/zvlen.
+  std::optional<rvvi_text_callbacks> rvvi_text_cbs;
+  if (opts.config_print_rvvi_text) {
+    rvvi_text_cbs.emplace(trace_log);
+    rvvi_text_cbs->emit_header(model);
+    model.register_callback(&*rvvi_text_cbs);
+  }
 
   init_end = steady_clock::now();
 
